@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // List operations
@@ -264,6 +266,47 @@ mergeable_heap *unsorted_union(mergeable_heap *heap_a, mergeable_heap *heap_b) {
     free(heap_b);
     return merged_heap;
 }
+/**
+ * Merges two heaps into one in constant time, for unsorted heaps cases.
+ */
+
+
+// Function to split the nodes of the given list into half
+list_t* split(list_t* head) {
+    list_t *fast = head, *slow = head;
+    list_t *prev = NULL;
+    while (fast && fast->next) {
+        prev = slow;
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+    if (prev) prev->next = NULL;  // Split the list into two halves
+    return slow;
+}
+
+// Function to merge two sorted lists
+list_t* merge(list_t* a, list_t* b) {
+    list_t dummy, *tail = &dummy;
+    dummy.next = NULL;
+    while (a && b) {
+        if (a->key < b->key) { tail->next = a; a = a->next; }
+        else { tail->next = b; b = b->next; }
+        tail = tail->next;
+    }
+    tail->next = a ? a : b;
+    return dummy.next;
+}
+
+// Recursive merge sort function
+list_t* mergeSort(list_t* head) {
+    if (!head || !head->next) return head;
+    list_t *second = split(head);
+    head = mergeSort(head);
+    second = mergeSort(second);
+    return merge(head, second);
+}
+
+
 
 void destroy_heap(mergeable_heap *heap) {
     free(heap);
@@ -312,6 +355,14 @@ void test_unsorted_heap(mergeable_heap *heapB) {
     printf("Extract Min of merged heap: %d\n", unsorted_extract_min(mergedHeapB));
 }
 
+// Helper function to print list
+void printList(list_t *node) {
+    while (node != NULL) {
+        printf("%d -> ", node->key);
+        node = node->next;
+    }
+    printf("NULL\n");
+}
 
 void handle_sigsegv(int sig) {
     printf("----------------Caught segmentation fault!---------------\n");
@@ -322,12 +373,55 @@ void handle_sigsegv(int sig) {
 int main() {
     signal(SIGSEGV, handle_sigsegv);
 
+    mergeable_heap *A = make_heap();
+    mergeable_heap *B = make_heap();
+    char selectedChar;
+    while (selectedChar != 'E') {
+        input_type inputType;
+        printf("How would you like to implement the mergeable heap? E for exit\n");
+        printf("  1) Using sorted linked lists.\n");
+        printf("  2) Using unsorted linked lists.\n");
+        scanf("%c", &selectedChar);
+        if (selectedChar != 'E') break;
+        else if (selectedChar != '1') inputType = SORTED;
+        else if (selectedChar != '2') inputType = UNSORTED;
+        else exit(1);
+        printf("Please choose an operation from the menu: \n");
+        printf("  1) Make Heap \n");
+        printf("  2) Insert \n");
+        printf("  3) Union \n");
+        printf("  4) Insert \n");
+        scanf("%c", &selectedChar);
+        if (selectedChar != 'E') break;
+        else if (selectedChar != '1') inputType = SORTED;
+        else if (selectedChar != '2') inputType = UNSORTED;
+        else exit(1);
+        printf("Press any key to continue. E to exit: \n");
+        scanf("%c", &selectedChar);
+    }
+
     printf("Testing Sorted List Heap\n");
     mergeable_heap *heap = make_heap();
     mergeable_heap *unsorted_heap = make_heap();
 
     test_sorted_heap(heap);
     test_unsorted_heap(unsorted_heap);
+
+    // Merge sort example usage
+    mergeable_heap *mergeSortHeap = make_heap();
+    prepend(mergeSortHeap, 3);
+    prepend(mergeSortHeap, 1);
+    prepend(mergeSortHeap, 4);
+
+
+    printf("Original List: ");
+    printList(mergeSortHeap->head);
+    // TODO: update the tail
+    mergeSortHeap->head= mergeSort(mergeSortHeap->head);
+
+    printf("Sorted List: ");
+    printList(mergeSortHeap->head);
+
     // Once done, make sure to free the allocated heap
     destroy_heap(heap);
     return 0;
