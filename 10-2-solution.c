@@ -16,6 +16,7 @@ enum input_type {
     UNSORTED
 };
 
+typedef enum input_type input_type;
 typedef struct list_t list_t;
 
 typedef struct {
@@ -94,19 +95,19 @@ list_t *link_together(list_t *a, list_t *b) {
 }
 
 list_t *merge_sorted(list_t *a, list_t *b) {
-    list_t dummy;
-    list_t *new = &dummy;
+    list_t merged_h;
+    // TODO: rename
+    list_t *new = &merged_h;
 
     while (a && b) {
         if (a->key < b->key) {
             new->next = a;
             a = a->next;
-            new = new->next;
         } else {
             new->next = b;
             b = b->next;
-            new = new->next;
         }
+        new = new->next;
     }
 
     if (a) {
@@ -115,7 +116,7 @@ list_t *merge_sorted(list_t *a, list_t *b) {
         new->next = b;
     }
 
-    return dummy.next;
+    return merged_h.next;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -158,26 +159,52 @@ void insert1(mergeable_heap *heap, int key) {
     heap->head = insert_sorted(heap->head, key);
 }
 
-int sorted_minimum(mergeable_heap *heap) {
-    return heap->head->key;
+int minimum(mergeable_heap *heap, input_type input_t) {
+    if (input_t == SORTED) {
+        return heap->head->key;
+    } else if (input_t == UNSORTED) {
+        return find_min(heap->head);
+    }
 }
 
+/**
+ * To extract the minimum element we'll do the following:
+ * 1. CalL minimum()
+ * 2. Replace the heap's root with the second smallest element # TODO: WHY IT IS NEEDED? ???
+ * 3. Replace the key from the end of the list with the element
+ * 4. Delete the last element
+ * 5. Call min heapify
+ * @param heap
+ * @return
+ */
 int extract_min1(mergeable_heap *heap) {
     list_t *old_head = heap->head;
-    int min = sorted_minimum(heap);
+    int min = minimum(heap, SORTED);
     heap->head = heap->head->next;
-    free(old_head);
+    free(old_head); // We can now free head after its deletion
     return min;
+//    list_t *old_head = heap->head;
+//    int min = minimum(heap, SORTED);
+//    heap->head = heap->head->next;
+//    free(old_head);
+//    return min;
 }
 
-mergeable_heap *union1(mergeable_heap *ha, mergeable_heap *hb) {
-    mergeable_heap *result = malloc(sizeof(mergeable_heap));
-    result->head = merge_sorted(ha->head, hb->head);
+//int extract_min2(mergeable_heap *heap) {
+//    int min = minimum(heap, UNSORTED);
+//    heap->head = delete_key(heap->head, min);
+//    return min;
+//}
 
-    free(ha);
-    free(hb);
 
-    return result;
+mergeable_heap *union1(mergeable_heap *heap_a, mergeable_heap *heap_b) {
+    mergeable_heap *merged_heap = malloc(sizeof(mergeable_heap));
+    merged_heap->head = merge_sorted(heap_a->head, heap_b->head);
+
+    free(heap_a);
+    free(heap_b);
+
+    return merged_heap;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -189,12 +216,8 @@ void insert2(mergeable_heap *heap, int key) {
     heap->head = prepend(heap->head, key);
 }
 
-int unsorted_minimum(mergeable_heap *heap) {
-    return find_min(heap->head);
-}
-
 int extract_min2(mergeable_heap *heap) {
-    int min = unsorted_minimum(heap);
+    int min = minimum(heap, UNSORTED);
     heap->head = delete_key(heap->head, min);
     return min;
 }
@@ -220,15 +243,15 @@ void test_sorted_heap(mergeable_heap *heap) {
     insert1(heap, 3);
     insert1(heap, 1);
     insert1(heap, 4);
-    printf("Minimum: %d\n", sorted_minimum(heap));
+    printf("Minimum: %d\n", minimum(heap, SORTED));
     printf("Extract Min: %d\n", extract_min1(heap));
-    printf("New Minimum after extraction: %d\n", sorted_minimum(heap));
+    printf("New Minimum after extraction: %d\n", minimum(heap, SORTED));
 
     mergeable_heap *heapA = make_heap();
     insert1(heapA, 2);
     insert1(heapA, 5);
     mergeable_heap *mergedHeapA = union1(heap, heapA);
-    printf("Minimum of merged heap: %d\n", sorted_minimum(mergedHeapA));
+    printf("Minimum of merged heap: %d\n", minimum(mergedHeapA, SORTED));
     printf("Extract Min of merged heap: %d\n", extract_min1(mergedHeapA));
 //    Should result the text of: Testing Sorted List Heap
 //    Minimum: 1
