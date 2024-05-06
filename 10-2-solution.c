@@ -21,11 +21,13 @@ typedef struct list_t list_t;
 
 typedef struct {
     list_t *head;
+    list_t *tail;
 } mergeable_heap;
 
 mergeable_heap *make_heap() {
     mergeable_heap *heap = malloc(sizeof(mergeable_heap));
     heap->head = NULL;
+    heap->tail = NULL;
     return heap;
 }
 
@@ -130,26 +132,31 @@ list_t *merge_sorted(list_t *a, list_t *b) {
  * @return
  */
 list_t *insert_sorted(list_t *list, int key) {
-    list_t *list_copy = malloc(sizeof(list_t));
-    list_copy->key = key;
+    list_t *new_node = malloc(sizeof(list_t));
+    new_node->key = key;
+    new_node->next = NULL;
+    new_node->prev = NULL;
 
     // In case the key should get inserted to the root of the heap
     if (!list || key < list->key) {
-        list_copy->next = list;
-        return list_copy;
+        new_node->next = list;
+        return new_node;
     }
 
     // Scanning the list until finding an instance of an element which is strictly larger than key
-    // TODO: rename l to somthing like temp_l, iter_l etc
-    list_t *l = list;
-    while (l->next && l->next->key < key) {
-        l = l->next;
+    list_t *current = list;
+    while (current->next && current->next->key < key) {
+        current = current->next;
     }
 
-    // We take all elements from l that are greater than key, and put them in list_copy after its root - key
-    // Then we take list_copy and put it after all elements of l that are smaller than key
-    list_copy->next = l->next;
-    l->next = list_copy;
+    // We take all elements from current that are greater than key, and put them in new_node after its root - key
+    // Then we take new_node and put it after all elements of current that are smaller than key
+    new_node->next = current->next;
+    if  (current->next) {
+        current->next->prev = new_node;
+    }
+    new_node->prev = current;
+    current->next = new_node;
 
     // After modified the addresses correctly, return the original list's pointer
     return list;
@@ -170,10 +177,7 @@ int minimum(mergeable_heap *heap, input_type input_t) {
 /**
  * To extract the minimum element we'll do the following:
  * 1. CalL minimum()
- * 2. Replace the heap's root with the second smallest element # TODO: WHY IT IS NEEDED? ???
- * 3. Replace the key from the end of the list with the element
- * 4. Delete the last element
- * 5. Call min heapify
+ * 2. # TODO:
  * @param heap
  * @return
  */
@@ -183,11 +187,6 @@ int extract_min1(mergeable_heap *heap) {
     heap->head = heap->head->next;
     free(old_head); // We can now free head after its deletion
     return min;
-//    list_t *old_head = heap->head;
-//    int min = minimum(heap, SORTED);
-//    heap->head = heap->head->next;
-//    free(old_head);
-//    return min;
 }
 
 //int extract_min2(mergeable_heap *heap) {
@@ -261,30 +260,31 @@ void test_sorted_heap(mergeable_heap *heap) {
 //    Extract Min of merged heap: 2
 }
 
-//void test_unsorted_heap() {
-//    printf("Testing Unsorted List Heap\n");
-//    mergeable_heap *heapB = make_heap();
-//    insert2(heapB, 3);
-//    insert2(heapB, 1);
-//    insert2(heapB, 4);
-//    printf("Minimum: %d\n", unsorted_minimum(heapB));
-//    printf("Extract Min: %d\n", extract_min2(heapB));
-//    printf("New Minimum after extraction: %d\n", unsorted_minimum(heapB));
-//
-//    mergeable_heap *heapC = make_heap();
-//    insert2(heapC, 2);
-//    insert2(heapC, 5);
-//    mergeable_heap *mergedHeapB = union2(heapB, heapC);
-//    printf("Minimum of merged heap: %d\n", unsorted_minimum(mergedHeapB));
-//    printf("Extract Min of merged heap: %d\n", extract_min2(mergedHeapB));
-//}
+void test_unsorted_heap(mergeable_heap *heap) {
+    printf("Testing Unsorted List Heap\n");
+    mergeable_heap *heapB = make_heap();
+    insert2(heapB, 3);
+    insert2(heapB, 1);
+    insert2(heapB, 4);
+    printf("Minimum: %d\n", minimum(heapB, UNSORTED));
+    printf("Extract Min: %d\n", extract_min2(heapB));
+    printf("New Minimum after extraction: %d\n", minimum(heapB, UNSORTED));
+
+    mergeable_heap *heapC = make_heap();
+    insert2(heapC, 2);
+    insert2(heapC, 5);
+    mergeable_heap *mergedHeapB = union2(heapB, heapC);
+    printf("Minimum of merged heap: %d\n", minimum(mergedHeapB, UNSORTED));
+    printf("Extract Min of merged heap: %d\n", extract_min2(mergedHeapB));
+}
 
 int main() {
     printf("Testing Sorted List Heap\n");
     mergeable_heap *heap = make_heap();
+    mergeable_heap *unsorted_heap = make_heap();
 
     test_sorted_heap(heap);
-//    test_unsorted_heap();
+    test_unsorted_heap(unsorted_heap);
     // Once done, make sure to free the allocated heap
     destroy_heap(heap);
     return 0;
