@@ -11,6 +11,11 @@ struct list_t {
     struct list_t *prev;
 };
 
+enum input_type {
+    SORTED,
+    UNSORTED
+};
+
 typedef struct list_t list_t;
 
 typedef struct {
@@ -18,29 +23,9 @@ typedef struct {
 } mergeable_heap;
 
 mergeable_heap *make_heap() {
-    mergeable_heap *result = malloc(sizeof(mergeable_heap));
-    result->head = NULL;
-    return result;
-}
-
-list_t *insert_sorted(list_t *list, int key) {
-    list_t *new = malloc(sizeof(list_t));
-    new->key = key;
-
-    if (!list || key < list->key) {
-        new->next = list;
-        return new;
-    }
-
-    list_t *l = list;
-    while (l->next && l->next->key < key) {
-        l = l->next;
-    }
-
-    new->next = l->next;
-    l->next = new;
-
-    return list;
+    mergeable_heap *heap = malloc(sizeof(mergeable_heap));
+    heap->head = NULL;
+    return heap;
 }
 
 list_t *delete_key(list_t *list, int key) {
@@ -137,6 +122,38 @@ list_t *merge_sorted(list_t *a, list_t *b) {
 // 1. Mergreable heaps with sorted list
 /////////////////////////////////////////////////////////////////////////////
 
+/**
+ *
+ * @param list
+ * @param key
+ * @return
+ */
+list_t *insert_sorted(list_t *list, int key) {
+    list_t *list_copy = malloc(sizeof(list_t));
+    list_copy->key = key;
+
+    // In case the key should get inserted to the root of the heap
+    if (!list || key < list->key) {
+        list_copy->next = list;
+        return list_copy;
+    }
+
+    // Scanning the list until finding an instance of an element which is strictly larger than key
+    // TODO: rename l to somthing like temp_l, iter_l etc
+    list_t *l = list;
+    while (l->next && l->next->key < key) {
+        l = l->next;
+    }
+
+    // We take all elements from l that are greater than key, and put them in list_copy after its root - key
+    // Then we take list_copy and put it after all elements of l that are smaller than key
+    list_copy->next = l->next;
+    l->next = list_copy;
+
+    // After modified the addresses correctly, return the original list's pointer
+    return list;
+}
+
 void insert1(mergeable_heap *heap, int key) {
     heap->head = insert_sorted(heap->head, key);
 }
@@ -146,11 +163,11 @@ int sorted_minimum(mergeable_heap *heap) {
 }
 
 int extract_min1(mergeable_heap *heap) {
-    list_t *head = heap->head;
-    int result = head->key;
-    heap->head = head->next;
-    free(head);
-    return result;
+    list_t *old_head = heap->head;
+    int min = sorted_minimum(heap);
+    heap->head = heap->head->next;
+    free(old_head);
+    return min;
 }
 
 mergeable_heap *union1(mergeable_heap *ha, mergeable_heap *hb) {
@@ -213,6 +230,12 @@ void test_sorted_heap(mergeable_heap *heap) {
     mergeable_heap *mergedHeapA = union1(heap, heapA);
     printf("Minimum of merged heap: %d\n", sorted_minimum(mergedHeapA));
     printf("Extract Min of merged heap: %d\n", extract_min1(mergedHeapA));
+//    Should result the text of: Testing Sorted List Heap
+//    Minimum: 1
+//    Extract Min: 1
+//    New Minimum after extraction: 3
+//    Minimum of merged heap: 2
+//    Extract Min of merged heap: 2
 }
 
 //void test_unsorted_heap() {
