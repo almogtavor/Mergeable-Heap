@@ -51,20 +51,20 @@ int minimum(mergeable_heap *heap, input_type input_t) {
     }
 }
 
-mergeable_heap *union_heaps(mergeable_heap *heap_a, mergeable_heap *heap_b, input_type type) {
-    if (!heap_a) return heap_b;
-    if (!heap_b) return heap_a;
+mergeable_heap *union_heaps(mergeable_heap *heapA, mergeable_heap *heapB, input_type type) {
+    if (!heapA) return heapB;
+    if (!heapB) return heapA;
 
-    mergeable_heap *merged_heap = malloc(sizeof(mergeable_heap));
+    mergeable_heap *mergedHeap = malloc(sizeof(mergeable_heap));
 
     if (type == SORTED) {
         // Merging two sorted lists into one sorted list in linear complexity time
-        list_t temp_node;  // Temporary node to simplify merging. The merged list will start after this node
-        list_t *current = &temp_node;
-        temp_node.next = NULL;
+        list_t tempNode;  // Temporary node to simplify merging. The merged list will start after this node
+        list_t *current = &tempNode;
+        tempNode.next = NULL;
 
-        list_t *a = heap_a->head;
-        list_t *b = heap_b->head;
+        list_t *a = heapA->head;
+        list_t *b = heapB->head;
 
         while (a && b) {
             if (a->key < b->key) {
@@ -78,27 +78,27 @@ mergeable_heap *union_heaps(mergeable_heap *heap_a, mergeable_heap *heap_b, inpu
         }
 
         current->next = a ? a : b;  // attach the remainder
-        merged_heap->head = temp_node.next;
+        mergedHeap->head = tempNode.next;
         // If there's any remainder, the tail must be updated to the tail of the remaining part
         if (current->next) {
-            merged_heap->tail = (a) ? heap_a->tail : heap_b->tail;
+            mergedHeap->tail = (a) ? heapA->tail : heapB->tail;
         } else {
-            merged_heap->tail = current;
+            mergedHeap->tail = current;
         }
     } else {
         // Concatenating two unsorted lists in constant complexity time
-        if (heap_a->tail) {
-            heap_a->tail->next = heap_b->head;
+        if (heapA->tail) {
+            heapA->tail->next = heapB->head;
         } else {
-            heap_a->head = heap_b->head;  // If heap_a is empty
+            heapA->head = heapB->head;  // If heapA is empty
         }
-        merged_heap->head = heap_a->head;
-        merged_heap->tail = (heap_b->tail) ? heap_b->tail : heap_a->tail;
+        mergedHeap->head = heapA->head;
+        mergedHeap->tail = (heapB->tail) ? heapB->tail : heapA->tail;
     }
 
-    free(heap_a); // since we replace `heap_a` with `merged_heap`
+    free(heapA); // since we replace `heapA` with `mergedHeap`
 
-    return merged_heap;
+    return mergedHeap;
 }
 
 
@@ -108,16 +108,16 @@ mergeable_heap *union_heaps(mergeable_heap *heap_a, mergeable_heap *heap_b, inpu
  */
 void insert_to_sorted_heap(mergeable_heap *heap, int key) {
     if (!heap) return;
-    list_t *new_node = malloc(sizeof(list_t));
-    new_node->key = key;
-    new_node->next = NULL;
+    list_t *newNode = malloc(sizeof(list_t));
+    newNode->key = key;
+    newNode->next = NULL;
 
     // In case the key should get inserted to the root of the heap
     if (!heap->head || key < heap->head->key) {
-        new_node->next = heap->head;
-        heap->head = new_node;
+        newNode->next = heap->head;
+        heap->head = newNode;
         if (!heap->head->next) {  // If the list was empty, update the tail to the new node
-            heap->tail = new_node;
+            heap->tail = newNode;
         }
         return;
     }
@@ -128,12 +128,12 @@ void insert_to_sorted_heap(mergeable_heap *heap, int key) {
         current = current->next;
     }
 
-    // We take all elements that are greater than key, and put them in new_node after its root, which is key
-    // Then we take new_node and put it after all elements of current that are smaller than key
-    new_node->next = current->next;
-    current->next = new_node;
-    if (!new_node->next) {  // If new node is now the last node
-        heap->tail = new_node;
+    // We take all elements that are greater than key, and put them in newNode after its root, which is key
+    // Then we take newNode and put it after all elements of current that are smaller than key
+    newNode->next = current->next;
+    current->next = newNode;
+    if (!newNode->next) {  // If new node is now the last node
+        heap->tail = newNode;
     }
 }
 
@@ -143,15 +143,15 @@ void insert_to_sorted_heap(mergeable_heap *heap, int key) {
  * Relevant for unsorted heaps. Complexity time O(1).
  */
 void prepend(mergeable_heap *heap, int key) {
-    list_t *new_node = malloc(sizeof(list_t));
+    list_t *newNode = malloc(sizeof(list_t));
 
-    new_node->key = key;
-    new_node->next = heap->head;
+    newNode->key = key;
+    newNode->next = heap->head;
 
     if (heap->head == NULL) {
-        heap->tail = new_node;
+        heap->tail = newNode;
     }
-    heap->head = new_node;
+    heap->head = newNode;
 }
 
 void insert(mergeable_heap *heap, int key, input_type inputType) {
@@ -210,10 +210,10 @@ int extract_min(mergeable_heap *heap, input_type inputType) {
     }
     int min = minimum(heap, inputType);
     if (inputType == SORTED) {
-        list_t *old_head = heap->head; // Temporarily store the node to be freed
+        list_t *oldHead = heap->head; // Temporarily store the node to be freed
         heap->head = heap->head->next;
         if (!heap->head) heap->tail = NULL;
-        free(old_head); // We can now free the old head after its deletion
+        free(oldHead); // We can now free the old head after its deletion
     } else {
         heap->head = delete_key(heap->head, min, &heap->tail);;
     }
