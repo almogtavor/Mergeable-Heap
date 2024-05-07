@@ -50,7 +50,7 @@ int find_min_in_unsorted_heap(list_t *current) {
     return min;
 }
 
-list_t *merge_sorted(list_t *a, list_t *b) {
+list_t *merge_sorted_lists(list_t *a, list_t *b) {
     list_t merged_heap;
     list_t *current = &merged_heap;
 
@@ -77,6 +77,32 @@ list_t *merge_sorted(list_t *a, list_t *b) {
 /////////////////////////////////////////////////////////////////////////////
 // 1. Mergreable heaps with sorted list
 /////////////////////////////////////////////////////////////////////////////
+
+int minimum(mergeable_heap *heap, input_type input_t) {
+    if (input_t == SORTED) {
+        return heap->head->key;
+    } else { // For unsorted cases
+        return find_min_in_unsorted_heap(heap->head);
+    }
+}
+
+
+mergeable_heap *union1(mergeable_heap *heap_a, mergeable_heap *heap_b) {
+    if (!heap_a) return heap_b;
+    if (!heap_b) return heap_a;
+    mergeable_heap *merged_heap = malloc(sizeof(mergeable_heap));
+    merged_heap->head = merge_sorted_lists(heap_a->head, heap_b->head);
+
+    free(heap_a);
+    free(heap_b);
+
+    return merged_heap;
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// 2. Mergreable heaps with unsorted lists
+/////////////////////////////////////////////////////////////////////////////
+
 
 /**
  * We receive the address of tail since we want to be able to update it.
@@ -118,49 +144,6 @@ list_t *insert_sorted(list_t *list, int key, list_t **tail) {
     return list;
 }
 
-void insert1(mergeable_heap *heap, int key) {
-    heap->head = insert_sorted(heap->head, key, &heap->tail);
-}
-
-int minimum(mergeable_heap *heap, input_type input_t) {
-    if (input_t == SORTED) {
-        return heap->head->key;
-    } else if (input_t == UNSORTED) {
-        return find_min_in_unsorted_heap(heap->head);
-    }
-}
-
-/**
- * To extract the minimum element we'll do the following:
- * 1. CalL minimum()
- * 2. # TODO:
- * @param heap
- * @return
- */
-int sorted_extract_min(mergeable_heap *heap) {
-    list_t *old_head = heap->head;
-    int min = minimum(heap, SORTED);
-    heap->head = heap->head->next;
-    free(old_head); // We can now free head after its deletion
-    return min;
-}
-
-
-mergeable_heap *union1(mergeable_heap *heap_a, mergeable_heap *heap_b) {
-    mergeable_heap *merged_heap = malloc(sizeof(mergeable_heap));
-    merged_heap->head = merge_sorted(heap_a->head, heap_b->head);
-
-    free(heap_a);
-    free(heap_b);
-
-    return merged_heap;
-}
-
-/////////////////////////////////////////////////////////////////////////////
-// 2. Mergreable heaps with unsorted lists
-/////////////////////////////////////////////////////////////////////////////
-
-
 /**
  * Inserts a new node with the specified key into the heap. This operation prepends the node
  * to the linked list that represents the heap, updating the heap's head, and its tail (in case of a new list).
@@ -179,6 +162,14 @@ void prepend(mergeable_heap *heap, int key) {
         heap->tail = new_node;
     }
     heap->head = new_node;
+}
+
+void insert(mergeable_heap *heap, int key, input_type inputType) {
+    if (inputType == SORTED) {
+        heap->head = insert_sorted(heap->head, key, &heap->tail);
+    } else {  // For UNSORTED inputType
+        prepend(heap, key);
+    }
 }
 
 /**
@@ -218,12 +209,30 @@ list_t *delete_key(list_t *list, int key, list_t **tail) {
     return list;
 }
 
-int unsorted_extract_min(mergeable_heap *heap) {
-    int min = minimum(heap, UNSORTED);
-    heap->head = delete_key(heap->head, min, &heap->tail);
+/**
+ * To extract the minimum element we'll do the following:
+ * To extract the minimum element from the heap, the function:
+ * 1. Calls minimum() to find the minimum value.
+ * 2. Removes the head of the heap if it's sorted, as the minimum is at the head.
+ * 3. For unsorted heaps, finds and deletes the minimum element from anywhere in the heap.
+ * 4. Frees the memory allocated for the node that contained the minimum element.
+ */
+int extract_min(mergeable_heap *heap, input_type inputType) {
+    if (!heap || !heap->head) {
+        fprintf(stderr, "Heap is empty or does not exist.\n");
+        return -1;
+    }
+    int min = minimum(heap, inputType);
+    if (inputType == SORTED) {
+        list_t *old_head = heap->head; // Temporarily store the node to be freed
+        heap->head = heap->head->next;
+        if (!heap->head) heap->tail = NULL;
+        free(old_head); // We can now free the old head after its deletion
+    } else {
+        heap->head = delete_key(heap->head, min, &heap->tail);;
+    }
     return min;
 }
-
 
 /**
  * Merges two heaps into one in constant time, for unsorted heaps cases.
@@ -249,9 +258,6 @@ mergeable_heap *unsorted_union(mergeable_heap *heap_a, mergeable_heap *heap_b) {
     free(heap_b);
     return merged_heap;
 }
-/**
- * Merges two heaps into one in constant time, for unsorted heaps cases.
- */
 
 
 /** Function to split the nodes of the given list into half
@@ -271,7 +277,7 @@ list_t *split(list_t *head) {
 }
 
 // Function to merge two sorted lists and update the tail
-list_t* merge(list_t* a, list_t* b, list_t **tail) {
+list_t *merge(list_t *a, list_t *b, list_t **tail) {
     list_t mergedResult;
     list_t *current = &mergedResult;  // Temporary head node to make operations easier
     mergedResult.next = NULL;
@@ -297,7 +303,7 @@ list_t* merge(list_t* a, list_t* b, list_t **tail) {
 /** Recursive merge sort function that also updates the tail after sorting is complete.
  * The complexity time of the algorithm is O(nlog(n)) at the worst case.
  */
-list_t* merge_sort(list_t* head, list_t **tail) {
+list_t *merge_sort(list_t *head, list_t **tail) {
     if (!head || !head->next) {
         *tail = head;  // In case the list is empty or has one element
         return head;
@@ -325,47 +331,6 @@ void destroy_heap(mergeable_heap *heap) {
 
 ////
 
-
-void test_sorted_heap(mergeable_heap *heap) {
-    insert1(heap, 3);
-    insert1(heap, 1);
-    insert1(heap, 4);
-    printf("Minimum: %d\n", minimum(heap, SORTED));
-    printf("Extract Min: %d\n", sorted_extract_min(heap));
-    printf("New Minimum after extraction: %d\n", minimum(heap, SORTED));
-
-    mergeable_heap *heapA = make_heap();
-    insert1(heapA, 2);
-    insert1(heapA, 5);
-    mergeable_heap *mergedHeapA = union1(heap, heapA);
-    printf("Minimum of merged heap: %d\n", minimum(mergedHeapA, SORTED));
-    printf("Extract Min of merged heap: %d\n", sorted_extract_min(mergedHeapA));
-//    Should result the text of: Testing Sorted List Heap
-//    Minimum: 1
-//    Extract Min: 1
-//    New Minimum after extraction: 3
-//    Minimum of merged heap: 2
-//    Extract Min of merged heap: 2
-}
-
-void test_unsorted_heap(mergeable_heap *heapB) {
-    printf("\nTesting Unsorted List Heap\n");
-//    mergeable_heap *heapB = make_heap();
-    prepend(heapB, 3);
-    prepend(heapB, 1);
-    prepend(heapB, 4);
-    printf("Minimum: %d\n", minimum(heapB, UNSORTED));
-    printf("Extract Min: %d\n", unsorted_extract_min(heapB));
-    printf("New Minimum after extraction: %d\n", minimum(heapB, UNSORTED));
-
-    mergeable_heap *heapC = make_heap();
-    prepend(heapC, 2);
-    prepend(heapC, 5);
-    mergeable_heap *mergedHeapB = unsorted_union(heapB, heapC);
-    printf("Minimum of merged heap: %d\n", minimum(mergedHeapB, UNSORTED));
-    printf("Extract Min of merged heap: %d\n", unsorted_extract_min(mergedHeapB));
-}
-
 // Helper function to print list
 void printList(list_t *node) {
     while (node != NULL) {
@@ -383,59 +348,111 @@ void handle_sigsegv(int sig) {
 
 int main() {
     signal(SIGSEGV, handle_sigsegv);
-
-    mergeable_heap *A = make_heap();
-    mergeable_heap *B = make_heap();
+    mergeable_heap *a = make_heap();
+    mergeable_heap *b = make_heap();
     char selectedChar;
-    while (selectedChar != 'E') {
-        input_type inputType;
-        printf("How would you like to implement the mergeable heap? E for exit\n");
-        printf("  1) Using sorted linked lists.\n");
-        printf("  2) Using unsorted linked lists.\n");
-        scanf("%c", &selectedChar);
-        if (selectedChar != 'E') break;
-        else if (selectedChar != '1') inputType = SORTED;
-        else if (selectedChar != '2') inputType = UNSORTED;
-        else exit(1);
+
+
+    printf("\nHow would you like to implement the mergeable heap? Enter 'E' to exit\n");
+    printf("  1) Using sorted linked lists.\n");
+    printf("  2) Using unsorted linked lists.\n");
+    scanf(" %c", &selectedChar);
+
+    // TODO: decide how to let them retry invalid input
+    if (selectedChar == 'E' || (selectedChar != '1' && selectedChar != '2')) exit(0);
+
+    input_type inputType = (selectedChar == '1') ? SORTED : UNSORTED;
+    while (true) {
         printf("Please choose an operation from the menu: \n");
         printf("  1) Make Heap \n");
-        printf("  2) Insert \n");
-        printf("  3) Union \n");
-        printf("  4) Insert \n");
-        scanf("%c", &selectedChar);
-        if (selectedChar != 'E') break;
-        else if (selectedChar != '1') inputType = SORTED;
-        else if (selectedChar != '2') inputType = UNSORTED;
-        else exit(1);
-        printf("Press any key to continue. E to exit: \n");
-        scanf("%c", &selectedChar);
+        printf("  2) Insert to A \n");
+        printf("  3) Insert to B \n");
+        printf("  4) Extract Min from A \n");
+        printf("  5) Extract Min from B \n");
+        printf("  6) Union A and B \n");
+        printf("  7) Sort A and B \n");
+        printf("  8) Print Lists \n");
+        printf("Press E to EXIT \n");
+        scanf(" %c", &selectedChar);
+
+        if (selectedChar == 'E') break;
+
+        int key;
+        switch (selectedChar) {
+            case '1':  // Make Heap
+                destroy_heap(a);
+                destroy_heap(b);
+                a = make_heap();
+                b = make_heap();
+                printf("New heaps created.\n");
+                break;
+            case '2':  // Insert to A
+                printf("Enter key to insert to A: ");
+                scanf("%d", &key);
+                if (inputType == SORTED) {
+                    insert1(a, key);
+                } else {
+                    prepend(a, key);
+                }
+                printf("Key inserted to A.\n");
+                break;
+            case '3':  // Insert to B
+                printf("Enter key to insert to B: ");
+                scanf("%d", &key);
+                if (inputType == SORTED) {
+                    insert1(b, key);
+                } else {
+                    prepend(b, key);
+                }
+                printf("Key inserted to B.\n");
+                break;
+            case '4':  // Print Min of A
+                printf("Extracted the minimum of A: %d\n", extract_min(a, inputType));
+                break;
+            case '5':  // Print Min of B
+                printf("Extracted the minimum of B: %d\n", extract_min(b, inputType));
+                break;
+            case '6':  // Union
+                if (inputType == SORTED) {
+                    a = union1(a, b);
+                } else {
+                    a = unsorted_union(a, b);
+                }
+                printList(a->head);
+                b = make_heap();
+                printf("Heaps unified. Second heap is now empty.\n");
+                break;
+            case '7':  // Sort A and B
+                if (inputType == UNSORTED) {
+                    printf("Current A: ");
+                    printList(a->head);
+                    printf("Current B: ");
+                    printList(b->head);
+                    sort_mergeable_heap(a);
+                    printf("Sorted A: ");
+                    printList(a->head);
+                    sort_mergeable_heap(b);
+                    printf("Sorted B: ");
+                    printList(b->head);
+                    printf("Heaps sorted.\n");
+                } else {
+                    printf("Heaps are already in sorted mode.\n");
+                }
+                break;
+            case '8':  // Print Lists
+                printf("Current lists A and B: \n");
+                printf("A: ");
+                printList(a->head);
+                printf("B: ");
+                printList(b->head);
+                break;
+            default:
+                printf("Invalid option.\n");
+                break;
+        }
     }
 
-    printf("Testing Sorted List Heap\n");
-    mergeable_heap *heap = make_heap();
-    mergeable_heap *unsorted_heap = make_heap();
-
-    test_sorted_heap(heap);
-    test_unsorted_heap(unsorted_heap);
-
-    // Merge sort example usage
-    mergeable_heap *mergeSortHeap = make_heap();
-    prepend(mergeSortHeap, 3);
-    prepend(mergeSortHeap, 1);
-    prepend(mergeSortHeap, 4);
-    prepend(mergeSortHeap, 2);
-
-
-    printf("Original List: ");
-    printList(mergeSortHeap->head);
-    // TODO: update the tail
-//    mergeSortHeap->head = merge_sort(mergeSortHeap->head, &mergeSortHeap->tail);
-    sort_mergeable_heap(mergeSortHeap);
-
-    printf("Sorted List: ");
-    printList(mergeSortHeap->head);
-
-    // Once done, make sure to free the allocated heap
-//    destroy_heap(heap);
+    destroy_heap(a);
+    destroy_heap(b);
     return 0;
 }
