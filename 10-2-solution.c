@@ -11,7 +11,6 @@
 struct list_t {
     int key;
     struct list_t *next;
-    struct list_t *prev;
 };
 
 enum input_type {
@@ -50,22 +49,6 @@ int find_min_in_unsorted_heap(list_t *current) {
 
     return min;
 }
-
-//list_t *link_together(list_t *a, list_t *b) {
-//    list_t *result;
-//
-//    if (!a) {
-//        result = b;
-//    } else {
-//        result = a;
-//        while (a->next) {
-//            a = a->next;
-//        }
-//        a->next = b;
-//    }
-//
-//    return result;
-//}
 
 list_t *merge_sorted(list_t *a, list_t *b) {
     list_t merged_heap;
@@ -122,7 +105,7 @@ list_t *insert_sorted(list_t *list, int key, list_t **tail) {
         current = current->next;
     }
 
-    if (current->next==NULL) {
+    if (current->next == NULL) {
         // Insert at the end of the list
         current->next = new_node;
         *tail = new_node;
@@ -192,7 +175,7 @@ void prepend(mergeable_heap *heap, int key) {
     new_node->key = key;
     new_node->next = heap->head;
 
-    if (heap->head==NULL){
+    if (heap->head == NULL) {
         heap->tail = new_node;
     }
     heap->head = new_node;
@@ -271,44 +254,72 @@ mergeable_heap *unsorted_union(mergeable_heap *heap_a, mergeable_heap *heap_b) {
  */
 
 
-// Function to split the nodes of the given list into half
-list_t* split(list_t* head) {
-    list_t *fast = head, *slow = head;
-    list_t *prev = NULL;
-    while (fast && fast->next) {
-        prev = slow;
-        slow = slow->next;
-        fast = fast->next->next;
+/** Function to split the nodes of the given list into half
+ * `lead` advances twice as fast as `trail`, so when 'lead' will get to the
+ * end of the list, `trail` would be at the half of it.
+ */
+list_t *split(list_t *head) {
+    list_t *lead = head, *trail = head;
+    list_t *trailPrev = NULL;  // Keeps track of the node before `trail`
+    while (lead && lead->next) {
+        trailPrev = trail;
+        trail = trail->next;
+        lead = lead->next->next;
     }
-    if (prev) prev->next = NULL;  // Split the list into two halves
-    return slow;
+    if (trailPrev) trailPrev->next = NULL;  // Split the list into two halves
+    return trail;  // `trail` is the start of the second half
 }
 
-// Function to merge two sorted lists
-list_t* merge(list_t* a, list_t* b) {
-    list_t dummy, *tail = &dummy;
-    dummy.next = NULL;
+// Function to merge two sorted lists and update the tail
+list_t* merge(list_t* a, list_t* b, list_t **tail) {
+    list_t mergedResult;
+    list_t *current = &mergedResult;  // Temporary head node to make operations easier
+    mergedResult.next = NULL;
     while (a && b) {
-        if (a->key < b->key) { tail->next = a; a = a->next; }
-        else { tail->next = b; b = b->next; }
-        tail = tail->next;
+        if (a->key < b->key) {
+            current->next = a;
+            a = a->next;
+        } else {
+            current->next = b;
+            b = b->next;
+        }
+        current = current->next;
     }
-    tail->next = a ? a : b;
-    return dummy.next;
+    current->next = a ? a : b;  // Attach the remaining part
+    // Move to the actual last node to update the tail
+    while (current->next) {
+        current = current->next;
+    }
+    *tail = current;  // Update the tail
+    return mergedResult.next;
 }
 
-// Recursive merge sort function
-list_t* mergeSort(list_t* head) {
-    if (!head || !head->next) return head;
-    list_t *second = split(head);
-    head = mergeSort(head);
-    second = mergeSort(second);
-    return merge(head, second);
+/** Recursive merge sort function that also updates the tail after sorting is complete.
+ * The complexity time of the algorithm is O(nlog(n)) at the worst case.
+ */
+list_t* merge_sort(list_t* head, list_t **tail) {
+    if (!head || !head->next) {
+        *tail = head;  // In case the list is empty or has one element
+        return head;
+    }
+    list_t *secondHalf = split(head);
+    head = merge_sort(head, tail);  // Sort the first half
+    secondHalf = merge_sort(secondHalf, tail);  // Sort the second half
+    return merge(head, secondHalf, tail);  // Merge and update tail
 }
 
-
+void sort_mergeable_heap(mergeable_heap *heap) {
+    if (!heap) return;
+    heap->head = merge_sort(heap->head, &heap->tail);
+}
 
 void destroy_heap(mergeable_heap *heap) {
+    list_t *current = heap->head;
+    while (current != NULL) {
+        list_t *next = current->next;
+        free(current);
+        current = next;
+    }
     free(heap);
 }
 
@@ -412,17 +423,19 @@ int main() {
     prepend(mergeSortHeap, 3);
     prepend(mergeSortHeap, 1);
     prepend(mergeSortHeap, 4);
+    prepend(mergeSortHeap, 2);
 
 
     printf("Original List: ");
     printList(mergeSortHeap->head);
     // TODO: update the tail
-    mergeSortHeap->head= mergeSort(mergeSortHeap->head);
+//    mergeSortHeap->head = merge_sort(mergeSortHeap->head, &mergeSortHeap->tail);
+    sort_mergeable_heap(mergeSortHeap);
 
     printf("Sorted List: ");
     printList(mergeSortHeap->head);
 
     // Once done, make sure to free the allocated heap
-    destroy_heap(heap);
+//    destroy_heap(heap);
     return 0;
 }
