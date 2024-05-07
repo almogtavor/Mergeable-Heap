@@ -23,27 +23,27 @@ typedef struct {
 
 // Declare the functions and types used from 10_2_solution.c
 extern mergeable_heap* make_heap();
-extern void insert1(mergeable_heap* heap, int key);
+extern void insert(mergeable_heap* heap, int key, input_type type);
 extern int minimum(mergeable_heap* heap, input_type type);
 extern int sorted_extract_min(mergeable_heap* heap);
-extern mergeable_heap* union1(mergeable_heap* heap1, mergeable_heap* heap2);
+
 extern void prepend(mergeable_heap* heap, int key);
 extern int extract_min(mergeable_heap* heap, input_type type);
-extern mergeable_heap* unsorted_union(mergeable_heap* heap1, mergeable_heap* heap2);
-extern void printList(list_t* node);
+extern mergeable_heap* union_heaps(mergeable_heap* heap1, mergeable_heap* heap2, input_type type);
+extern void print_list(list_t* node);
 
 void test_sorted_heap(mergeable_heap *heap) {
-    insert1(heap, 3);
-    insert1(heap, 1);
-    insert1(heap, 4);
+    insert(heap, 3, SORTED);
+    insert(heap, 1, SORTED);
+    insert(heap, 4, SORTED);
     printf("Minimum: %d\n", minimum(heap, SORTED));
     printf("Extract Min: %d\n", extract_min(heap, SORTED));
     printf("New Minimum after extraction: %d\n", minimum(heap, SORTED));
 
     mergeable_heap *heapA = make_heap();
-    insert1(heapA, 2);
-    insert1(heapA, 5);
-    mergeable_heap *mergedHeapA = union1(heap, heapA);
+    insert(heapA, 2, SORTED);
+    insert(heapA, 5, SORTED);
+    mergeable_heap *mergedHeapA = union_heaps(heap, heapA, SORTED);
     printf("Minimum of merged heap: %d\n", minimum(mergedHeapA, SORTED));
     printf("Extract Min of merged heap: %d\n", extract_min(mergedHeapA, SORTED));
 //    Should result the text of: Testing Sorted List Heap
@@ -67,7 +67,7 @@ void test_unsorted_heap(mergeable_heap *heapB) {
     mergeable_heap *heapC = make_heap();
     prepend(heapC, 2);
     prepend(heapC, 5);
-    mergeable_heap *mergedHeapB = unsorted_union(heapB, heapC);
+    mergeable_heap *mergedHeapB = union_heaps(heapB, heapC, UNSORTED);
     printf("Minimum of merged heap: %d\n", minimum(mergedHeapB, UNSORTED));
     printf("Extract Min of merged heap: %d\n", extract_min(mergedHeapB, UNSORTED));
 }
@@ -97,11 +97,11 @@ void test_unsorted_heap(mergeable_heap *heapB) {
 //
 //
 //    printf("Original List: ");
-//    printList(mergeSortHeap->head);
-//    sort_mergeable_heap(mergeSortHeap);
+//    print_list(mergeSortHeap->head);
+//    sort(mergeSortHeap);
 //
 //    printf("Sorted List: ");
-//    printList(mergeSortHeap->head);
+//    print_list(mergeSortHeap->head);
 //
 //    // Once done, make sure to free the allocated heap
 ////    destroy_heap(heap);
