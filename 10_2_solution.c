@@ -28,27 +28,26 @@ mergeable_heap *make_heap() {
 }
 
 /**
- * Searching for the minimum element of an unsorted heap. Complexity time O(n).
+ * Finds the minimum element of a mergeable heap. For a sorted heap, it returns the head's key. Complexity time O(1).
+ * For an unsorted heap, it scans through the list to find the minimum. Complexity time O(n).
  */
-int find_min_in_unsorted_heap(list_t *current) {
-    int min = current->key;
-    current = current->next;
-
-    while (current) {
-        if (current->key < min) {
-            min = current->key;
-        }
-        current = current->next;
-    }
-
-    return min;
-}
-
 int minimum(mergeable_heap *heap, input_type input_t) {
     if (input_t == SORTED) {
+        // For sorted heaps, the minimum element is the head of the list.
         return heap->head->key;
-    } else { // For unsorted cases
-        return find_min_in_unsorted_heap(heap->head);
+    } else {
+        // For unsorted heaps, iterate through the list to find the minimum element.
+        list_t *current = heap->head;
+        int min = current->key;
+        current = current->next;
+
+        while (current) {
+            if (current->key < min) {
+                min = current->key;
+            }
+            current = current->next;
+        }
+        return min;
     }
 }
 
@@ -142,9 +141,6 @@ void insert_to_sorted_heap(mergeable_heap *heap, int key) {
  * Inserts a new node with the specified key into the heap. This operation prepends the node
  * to the linked list that represents the heap, updating the heap's head, and its tail (in case of a new list).
  * Relevant for unsorted heaps. Complexity time O(1).
- *
- * @param heap The heap to insert into.
- * @param key The key of the new node to insert.
  */
 void prepend(mergeable_heap *heap, int key) {
     list_t *new_node = malloc(sizeof(list_t));
@@ -169,11 +165,7 @@ void insert(mergeable_heap *heap, int key, input_type inputType) {
 /**
  * Deletes all nodes with the specified key from the list and updates the tail if necessary.
  * Relevant for unsorted heaps. Complexity time O(n).
- *
- * @param list The head of the list from which nodes will be deleted.
- * @param key The key of nodes to delete.
- * @param tail Pointer to the tail of the list.
- * @return The possibly new head of the list.
+ * The method returns the possibly new head of the list.
  */
 list_t *delete_key(list_t *list, int key, list_t **tail) {
     list_t *current = list, *prev = NULL;
