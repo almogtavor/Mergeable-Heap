@@ -289,6 +289,25 @@ void destroy_heap(mergeable_heap *heap) {
     free(heap);
 }
 
+// Function to read numbers from a file and populate a heap
+void populate_heap_from_file(const char *filename, mergeable_heap *heap, input_type inputType) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Failed to open file");
+        return;
+    } else {
+        printf("Successfully loaded the file %s.\n", filename);
+    }
+
+    int value;
+    // Assuming the file contains numbers separated by spaces or newlines
+    while (fscanf(file, "%d", &value) == 1) {
+        insert(heap, value, inputType);
+    }
+
+    fclose(file);
+}
+
 // Helper function to print list
 void print_list(list_t *node) {
     while (node != NULL) {
@@ -316,6 +335,8 @@ int main() {
     }
 
     input_type inputType = (selectedChar == '1') ? SORTED : UNSORTED;
+    populate_heap_from_file("../heap_a.txt", a, inputType);
+    populate_heap_from_file("../heap_b.txt", b, inputType);
     while (true) {
         printf("Please choose an operation from the menu: \n");
         printf("  1) Make Heap \n");
