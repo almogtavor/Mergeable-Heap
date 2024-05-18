@@ -1,6 +1,6 @@
 # Mergeable heap using linked lists implementation in C
  
-The solution to problem 10-2 from the book "Introduction to Algorithms" by Cormen.
+The solution to problem 10-2 from the book "Introduction to Algorithms" by CLRS.
 
 The problem is:
 ```
